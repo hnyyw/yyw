@@ -1,0 +1,979 @@
+openapi: 3.0.3
+info:
+  title: NetDisk API
+  version: 1.0.0
+  description: |
+    类百度网盘 - MVP 可落地接口定义（Spring Boot + Vue3）。
+    - 认证：Bearer JWT
+    - 上传：S3/MinIO Multipart + Presigned URL
+servers:
+  - url: http://localhost:8080
+    description: local
+
+tags:
+  - name: Auth
+  - name: Files
+  - name: Trash
+  - name: Uploads
+  - name: Downloads
+  - name: Shares
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/auth/register:
+    post:
+      tags: [Auth]
+      summary: 注册
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_RegisterResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: 登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: 退出登录（可选：token 拉黑）
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/files/folders:
+    post:
+      tags: [Files]
+      summary: 新建文件夹
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFolderRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_CreateFolderResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/files/list:
+    get:
+      tags: [Files]
+      summary: 列表目录
+      parameters:
+        - in: query
+          name: parent_id
+          schema: { type: integer, format: int64, nullable: true }
+          description: 父目录ID；根目录传空或 0（实现任选其一，需前后端统一）
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, minimum: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - in: query
+          name: sort
+          schema: { type: string, enum: [name, updated_at, size_bytes], default: updated_at }
+        - in: query
+          name: order
+          schema: { type: string, enum: [asc, desc], default: desc }
+        - in: query
+          name: include_deleted
+          schema: { type: integer, enum: [0, 1], default: 0 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_PageEntryVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/files/{entryId}/rename:
+    post:
+      tags: [Files]
+      summary: 重命名
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/files/move:
+    post:
+      tags: [Files]
+      summary: 移动（批量）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/files/delete:
+    post:
+      tags: [Files]
+      summary: 删除（进回收站）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/trash/list:
+    get:
+      tags: [Trash]
+      summary: 回收站列表
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, minimum: 1 }
+        - in: query
+          name: page_size
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_PageEntryVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/trash/restore:
+    post:
+      tags: [Trash]
+      summary: 还原
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestoreRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/trash/purge:
+    post:
+      tags: [Trash]
+      summary: 彻底删除
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurgeRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/uploads/precheck:
+    post:
+      tags: [Uploads]
+      summary: 上传预检（秒传判断）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrecheckRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_PrecheckResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/uploads/init:
+    post:
+      tags: [Uploads]
+      summary: 初始化 Multipart 上传（返回分片 presigned URL）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InitUploadRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_InitUploadResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/uploads/{uploadId}:
+    get:
+      tags: [Uploads]
+      summary: 查询上传会话（用于断点续传）
+      parameters:
+        - in: path
+          name: uploadId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_UploadSessionVO"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/uploads/complete:
+    post:
+      tags: [Uploads]
+      summary: 完成 Multipart 上传（服务端 CompleteMultipartUpload + 落库）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteUploadRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_CompleteUploadResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/uploads/{uploadId}/abort:
+    post:
+      tags: [Uploads]
+      summary: 取消上传（AbortMultipartUpload + 标记会话）
+      parameters:
+        - in: path
+          name: uploadId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/files/{entryId}/download-link:
+    post:
+      tags: [Downloads]
+      summary: 获取下载链接（短期有效 presigned GET）
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_DownloadLinkResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/shares:
+    post:
+      tags: [Shares]
+      summary: 创建分享
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateShareRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_CreateShareResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/v1/shares/{shareId}/verify:
+    post:
+      tags: [Shares]
+      summary: 校验提取码（返回 share_token）
+      security: []
+      parameters:
+        - in: path
+          name: shareId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyShareRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_VerifyShareResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedShare"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/shares/{shareId}/list:
+    get:
+      tags: [Shares]
+      summary: 分享内列表（需 X-Share-Token）
+      security: []
+      parameters:
+        - in: path
+          name: shareId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Share-Token
+          required: true
+          schema: { type: string }
+        - in: query
+          name: parent_entry_id
+          schema: { type: integer, format: int64, nullable: true }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_ListShareEntryResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedShare"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/shares/{shareId}/download-link:
+    post:
+      tags: [Shares]
+      summary: 分享内获取下载链接（需 X-Share-Token）
+      security: []
+      parameters:
+        - in: path
+          name: shareId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Share-Token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareDownloadLinkRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_DownloadLinkResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedShare"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/shares/{shareId}/save:
+    post:
+      tags: [Shares]
+      summary: 分享转存到我的网盘（需 X-Share-Token）
+      security: []
+      parameters:
+        - in: path
+          name: shareId
+          required: true
+          schema: { type: string }
+        - in: header
+          name: X-Share-Token
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareSaveRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/UnauthorizedShare"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/shares/{shareId}/cancel:
+    post:
+      tags: [Shares]
+      summary: 取消分享
+      parameters:
+        - in: path
+          name: shareId
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse_Object"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: 参数错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Unauthorized:
+      description: 未登录或 token 失效
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    UnauthorizedShare:
+      description: share_token 无效/过期 或 提取码错误
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    NotFound:
+      description: 不存在
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+    Conflict:
+      description: 冲突（同名/状态冲突/幂等冲突等）
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiError" }
+
+  schemas:
+    ApiResponse_Object:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { type: object, nullable: true }
+        request_id: { type: string, example: req_xxx }
+
+    ApiError:
+      type: object
+      properties:
+        code: { type: integer, example: 40001 }
+        message: { type: string, example: 参数错误 }
+        request_id: { type: string, example: req_xxx }
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, example: a@b.com }
+        password: { type: string, example: "12345678" }
+
+    RegisterResponse:
+      type: object
+      properties:
+        user_id: { type: integer, format: int64 }
+
+    ApiResponse_RegisterResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/RegisterResponse" }
+        request_id: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        token_type: { type: string, example: Bearer }
+        expire_in: { type: integer, example: 7200 }
+
+    ApiResponse_LoginResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/LoginResponse" }
+        request_id: { type: string }
+
+    CreateFolderRequest:
+      type: object
+      required: [parent_id, name]
+      properties:
+        parent_id: { type: integer, format: int64, example: 0 }
+        name: { type: string, example: 新建文件夹 }
+
+    CreateFolderResponse:
+      type: object
+      properties:
+        entry_id: { type: integer, format: int64 }
+
+    ApiResponse_CreateFolderResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/CreateFolderResponse" }
+        request_id: { type: string }
+
+    EntryVO:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        parent_id: { type: integer, format: int64, nullable: true }
+        type: { type: string, enum: [folder, file] }
+        name: { type: string }
+        size_bytes: { type: integer, format: int64 }
+        is_deleted: { type: boolean }
+        deleted_at: { type: string, nullable: true }
+        created_at: { type: string }
+        updated_at: { type: string }
+
+    PageEntryVO:
+      type: object
+      properties:
+        page: { type: integer }
+        page_size: { type: integer }
+        total: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/EntryVO" }
+
+    ApiResponse_PageEntryVO:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/PageEntryVO" }
+        request_id: { type: string }
+
+    RenameRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    MoveRequest:
+      type: object
+      required: [entry_ids, target_parent_id]
+      properties:
+        entry_ids:
+          type: array
+          items: { type: integer, format: int64 }
+        target_parent_id: { type: integer, format: int64 }
+
+    DeleteRequest:
+      type: object
+      required: [entry_ids]
+      properties:
+        entry_ids:
+          type: array
+          items: { type: integer, format: int64 }
+
+    RestoreRequest:
+      type: object
+      required: [entry_ids, strategy]
+      properties:
+        entry_ids:
+          type: array
+          items: { type: integer, format: int64 }
+        strategy:
+          type: string
+          enum: [auto_rename, overwrite, fail]
+
+    PurgeRequest:
+      type: object
+      required: [entry_ids]
+      properties:
+        entry_ids:
+          type: array
+          items: { type: integer, format: int64 }
+
+    PrecheckRequest:
+      type: object
+      required: [parent_id, name, sha256_hex, size_bytes]
+      properties:
+        parent_id: { type: integer, format: int64 }
+        name: { type: string }
+        sha256_hex: { type: string, description: "64 hex chars" }
+        size_bytes: { type: integer, format: int64 }
+        conflict_strategy:
+          type: string
+          enum: [fail, auto_rename]
+          default: fail
+
+    PrecheckResponse:
+      type: object
+      properties:
+        need_upload: { type: boolean }
+        entry_id: { type: integer, format: int64, nullable: true }
+        part_size: { type: integer, nullable: true, example: 16777216 }
+
+    ApiResponse_PrecheckResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/PrecheckResponse" }
+        request_id: { type: string }
+
+    InitUploadRequest:
+      type: object
+      required: [parent_id, name, sha256_hex, size_bytes]
+      properties:
+        parent_id: { type: integer, format: int64 }
+        name: { type: string }
+        sha256_hex: { type: string }
+        size_bytes: { type: integer, format: int64 }
+        part_size: { type: integer, nullable: true }
+        conflict_strategy:
+          type: string
+          enum: [fail, auto_rename]
+          default: fail
+
+    PresignedPart:
+      type: object
+      properties:
+        part_number: { type: integer }
+        url: { type: string }
+
+    InitUploadResponse:
+      type: object
+      properties:
+        upload_id: { type: string }
+        part_size: { type: integer }
+        total_parts: { type: integer }
+        expire_at: { type: string }
+        parts:
+          type: array
+          items: { $ref: "#/components/schemas/PresignedPart" }
+
+    ApiResponse_InitUploadResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/InitUploadResponse" }
+        request_id: { type: string }
+
+    CompleteUploadRequest:
+      type: object
+      required: [upload_id, parts]
+      properties:
+        upload_id: { type: string }
+        parts:
+          type: array
+          items: { $ref: "#/components/schemas/CompletedPart" }
+
+    CompletedPart:
+      type: object
+      required: [part_number, etag]
+      properties:
+        part_number: { type: integer }
+        etag: { type: string, description: "来自 UploadPart 响应头 ETag（注意包含引号与否要前后端统一）" }
+
+    CompleteUploadResponse:
+      type: object
+      properties:
+        entry_id: { type: integer, format: int64 }
+        blob_id: { type: integer, format: int64 }
+
+    ApiResponse_CompleteUploadResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/CompleteUploadResponse" }
+        request_id: { type: string }
+
+    UploadSessionVO:
+      type: object
+      properties:
+        upload_id: { type: string }
+        target_parent_id: { type: integer, format: int64 }
+        target_name: { type: string }
+        sha256_hex: { type: string }
+        size_bytes: { type: integer, format: int64 }
+        part_size: { type: integer }
+        total_parts: { type: integer }
+        status: { type: string, enum: [init, uploading, completed, aborted, expired] }
+        uploaded_parts:
+          type: array
+          items: { $ref: "#/components/schemas/CompletedPart" }
+
+    ApiResponse_UploadSessionVO:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/UploadSessionVO" }
+        request_id: { type: string }
+
+    DownloadLinkResponse:
+      type: object
+      properties:
+        url: { type: string }
+        expire_in: { type: integer, example: 300 }
+
+    ApiResponse_DownloadLinkResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/DownloadLinkResponse" }
+        request_id: { type: string }
+
+    CreateShareRequest:
+      type: object
+      required: [root_entry_id, permission]
+      properties:
+        root_entry_id: { type: integer, format: int64 }
+        permission: { type: string, enum: [preview, download, save] }
+        code: { type: string, nullable: true, description: "提取码（明文仅用于创建时传入）" }
+        expired_at: { type: string, nullable: true }
+
+    CreateShareResponse:
+      type: object
+      properties:
+        share_id: { type: string }
+        share_url: { type: string }
+
+    ApiResponse_CreateShareResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/CreateShareResponse" }
+        request_id: { type: string }
+
+    VerifyShareRequest:
+      type: object
+      properties:
+        code: { type: string, nullable: true }
+
+    VerifyShareResponse:
+      type: object
+      properties:
+        share_token: { type: string }
+        expire_in: { type: integer, example: 7200 }
+
+    ApiResponse_VerifyShareResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/VerifyShareResponse" }
+        request_id: { type: string }
+
+    ShareEntryVO:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        parent_id: { type: integer, format: int64, nullable: true }
+        type: { type: string, enum: [folder, file] }
+        name: { type: string }
+        size_bytes: { type: integer, format: int64 }
+
+    ListShareEntryResponse:
+      type: object
+      properties:
+        share_id: { type: string }
+        root_entry_id: { type: integer, format: int64 }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/ShareEntryVO" }
+
+    ApiResponse_ListShareEntryResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 0 }
+        message: { type: string, example: OK }
+        data: { $ref: "#/components/schemas/ListShareEntryResponse" }
+        request_id: { type: string }
+
+    ShareDownloadLinkRequest:
+      type: object
+      required: [entry_id]
+      properties:
+        entry_id: { type: integer, format: int64 }
+
+    ShareSaveRequest:
+      type: object
+      required: [entry_id, target_parent_id]
+      properties:
+        entry_id: { type: integer, format: int64 }
+        target_parent_id: { type: integer, format: int64 }
