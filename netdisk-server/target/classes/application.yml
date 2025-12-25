@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/netdisk?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+logging:
+  level:
+    com.example.netdisk: INFO
+
+netdisk:
+  jwt:
+    issuer: netdisk
+    secret: "CHANGE_ME_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS"
+    access-token-ttl-seconds: 7200
+  presign:
+    upload-part-expire-seconds: 900
+    download-expire-seconds: 300
+    share-token-ttl-seconds: 7200
+  upload:
+    part-size-default-bytes: 16777216 # 16MB
+    part-size-min-bytes: 8388608     # 8MB
+    part-size-max-bytes: 67108864    # 64MB
+    session-ttl-minutes: 60
+  s3:
+    endpoint: "http://localhost:9000" # MinIO: http://127.0.0.1:9000
+    region: "us-east-1"
+    access-key: "minioadmin"
+    secret-key: "minioadmin"
+    bucket: "netdisk"
+    path-style-access: true
