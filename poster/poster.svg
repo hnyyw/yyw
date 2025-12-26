@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070A12"/>
+      <stop offset="0.55" stop-color="#070A1A"/>
+      <stop offset="1" stop-color="#081428"/>
+    </linearGradient>
+
+    <radialGradient id="vignette" cx="50%" cy="35%" r="70%">
+      <stop offset="0" stop-color="#0B2B55" stop-opacity="0.35"/>
+      <stop offset="0.55" stop-color="#0B2B55" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00E5FF"/>
+      <stop offset="0.45" stop-color="#7C4DFF"/>
+      <stop offset="1" stop-color="#00FFA8"/>
+    </linearGradient>
+
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feColorMatrix in="blur" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.9 0" result="colored"/>
+      <feMerge>
+        <feMergeNode in="colored"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="blur2"/>
+      <feColorMatrix in="blur2" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.55 0" result="colored2"/>
+      <feMerge>
+        <feMergeNode in="colored2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M60 0H0V60" fill="none" stroke="#2A3C66" stroke-opacity="0.25" stroke-width="1"/>
+      <path d="M0 0H60" fill="none" stroke="#2A3C66" stroke-opacity="0.12" stroke-width="1"/>
+      <path d="M0 0V60" fill="none" stroke="#2A3C66" stroke-opacity="0.12" stroke-width="1"/>
+    </pattern>
+
+    <style>
+      /* Font stack: prefer FangZheng YaHei (FZYaHei) when embedded/installed. */
+      .fz {
+        font-family: "FZYaHei", "FangZheng YaHei", "Noto Sans CJK SC", "Noto Sans CJK TC", "Noto Sans CJK JP", system-ui, sans-serif;
+      }
+      .title {
+        font-weight: 700;
+        font-size: 92px;
+        letter-spacing: 2px;
+        fill: #EAF4FF;
+      }
+      .subtitle {
+        font-weight: 500;
+        font-size: 28px;
+        letter-spacing: 1px;
+        fill: rgba(234,244,255,0.78);
+      }
+      .body {
+        font-weight: 400;
+        font-size: 40px;
+        line-height: 1.35;
+        fill: rgba(234,244,255,0.92);
+      }
+      .muted {
+        fill: rgba(234,244,255,0.62);
+      }
+      .chip {
+        font-weight: 600;
+        font-size: 22px;
+        letter-spacing: 1.5px;
+        fill: rgba(234,244,255,0.88);
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1080" height="1920" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1080" height="1920" fill="url(#grid)" opacity="0.7"/>
+  <rect x="0" y="0" width="1080" height="1920" fill="url(#vignette)"/>
+
+  <g opacity="0.9" filter="url(#softGlow)">
+    <path d="M-80 520 C 240 420, 420 560, 720 450 S 1200 350, 1160 240"
+          fill="none" stroke="url(#neon)" stroke-width="10" stroke-linecap="round" opacity="0.45"/>
+    <path d="M-120 1240 C 260 1040, 520 1380, 820 1180 S 1220 980, 1240 860"
+          fill="none" stroke="url(#neon)" stroke-width="12" stroke-linecap="round" opacity="0.35"/>
+  </g>
+
+  <g stroke="#6FE9FF" stroke-opacity="0.28" stroke-width="2" fill="none">
+    <path d="M110 300 H420 C450 300, 470 280, 470 250 V140"/>
+    <path d="M860 420 V560 C860 590, 840 610, 810 610 H620"/>
+    <path d="M170 1460 H410 C440 1460, 460 1480, 460 1510 V1710"/>
+    <path d="M950 1260 H760 C730 1260, 710 1280, 710 1310 V1500"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <circle cx="470" cy="140" r="6" fill="#00E5FF"/>
+    <circle cx="860" cy="420" r="6" fill="#7C4DFF"/>
+    <circle cx="460" cy="1710" r="6" fill="#00FFA8"/>
+    <circle cx="710" cy="1500" r="6" fill="#00E5FF"/>
+  </g>
+
+  <g class="fz">
+    <g transform="translate(90 140)">
+      <rect x="0" y="0" rx="18" ry="18" width="260" height="44" fill="rgba(0,229,255,0.10)" stroke="rgba(0,229,255,0.38)"/>
+      <text x="20" y="30" class="chip">TECH POSTER</text>
+    </g>
+    <g transform="translate(370 140)">
+      <rect x="0" y="0" rx="18" ry="18" width="320" height="44" fill="rgba(124,77,255,0.10)" stroke="rgba(124,77,255,0.42)"/>
+      <text x="20" y="30" class="chip">MODEL EVOLUTION</text>
+    </g>
+  </g>
+
+  <g class="fz" transform="translate(90 320)">
+    <text x="0" y="0" class="title">AI&#x7F16;&#x7A0B;&#x5927;&#x6A21;&#x578B;</text>
+    <rect x="0" y="32" width="520" height="8" fill="url(#neon)" opacity="0.95" filter="url(#glow)"/>
+    <text x="0" y="86" class="subtitle">&#x4ECE; 3.5 &#x5230; 4.5&#xFF0C;&#x7F16;&#x7A0B;&#x80FD;&#x529B;&#x8DC3;&#x8FC1;</text>
+  </g>
+
+  <g class="fz" transform="translate(90 610)">
+    <text class="body">
+      <tspan x="0" dy="0">AI&#x7F16;&#x7A0B;&#x5927;&#x6A21;&#x578B;&#x5728;&#x4ECA;&#x5E74;&#x4E00;&#x8DEF;&#x4ECE;Claude 3.5</tspan>
+      <tspan x="0" dy="58">&#x5347;&#x7EA7;&#x5230;3.7&#x3001;4.0&#x3001;4.5&#xFF0C;</tspan>
+      <tspan x="0" dy="58">&#x7F16;&#x7A0B;&#x80FD;&#x529B;&#x5F97;&#x5230;&#x5DE8;&#x5927;&#x7684;&#x63D0;&#x5347;&#x3002;</tspan>
+    </text>
+  </g>
+
+  <g transform="translate(90 940)">
+    <rect x="0" y="0" width="900" height="220" rx="28" ry="28" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.10)"/>
+    <path d="M110 120 H790" stroke="url(#neon)" stroke-width="6" stroke-linecap="round" opacity="0.85" filter="url(#glow)"/>
+    <g filter="url(#glow)">
+      <circle cx="110" cy="120" r="10" fill="#00E5FF"/>
+      <circle cx="330" cy="120" r="10" fill="#7C4DFF"/>
+      <circle cx="550" cy="120" r="10" fill="#00E5FF"/>
+      <circle cx="790" cy="120" r="10" fill="#00FFA8"/>
+    </g>
+    <g class="fz">
+      <text x="90" y="70" class="subtitle muted">&#x5347;&#x7EA7;&#x8DEF;&#x5F84;</text>
+      <text x="80" y="175" class="subtitle">Claude 3.5</text>
+      <text x="310" y="175" class="subtitle">3.7</text>
+      <text x="530" y="175" class="subtitle">4.0</text>
+      <text x="770" y="175" class="subtitle">4.5</text>
+    </g>
+  </g>
+
+  <g class="fz" transform="translate(90 1780)">
+    <text x="0" y="0" class="subtitle muted">2025 - AI Software Engineering</text>
+    <text x="900" y="0" text-anchor="end" class="subtitle muted mono">vNEXT</text>
+  </g>
+</svg>
